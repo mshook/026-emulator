@@ -1,0 +1,1080 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>IBM 026 Keypunch</title>
+<link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+<style>
+*{box-sizing:border-box;margin:0;padding:0}
+:root{
+  --bg:#ede9e0;--bg2:#e4e0d6;--bg3:#f8f6f0;
+  --line:#b8b0a0;--line2:#9a9080;
+  --text:#4a3c2c;--text2:#2a2010;--text3:#100800;
+  --green:#0e7040;--blue:#0a58b0;--amber:#b06808;--red:#b81820;
+  --font:'IBM Plex Mono',monospace
+}
+html,body{height:100%;overflow:hidden;background:var(--bg);color:var(--text);font-family:var(--font);font-size:12px}
+#app{display:flex;flex-direction:column;height:100%}
+
+/* ── Header ── */
+#hdr{flex-shrink:0;display:flex;align-items:center;gap:11px;padding:6px 14px;background:var(--bg2);border-bottom:1px solid var(--line);flex-wrap:wrap}
+#hdr h1{font-size:12px;font-weight:600;color:var(--text3);letter-spacing:.12em}
+.sep{width:1px;height:16px;background:var(--line2)}
+.pill{padding:2px 8px;border-radius:2px;border:1px solid var(--line2);font-size:10px;font-weight:500;background:var(--bg3);transition:border-color .15s,color .15s}
+.pill.ma{color:var(--green);border-color:var(--green)}
+.pill.mn{color:var(--blue); border-color:var(--blue)}
+.pill.ms{color:var(--amber);border-color:var(--amber)}
+#hcol{color:var(--text3);font-size:12px;font-weight:500;min-width:55px}
+select{background:var(--bg3);border:1px solid var(--line2);color:var(--text2);font-family:var(--font);font-size:10px;padding:2px 5px;border-radius:2px}
+.hb{padding:2px 10px;background:var(--bg3);border:1px solid var(--line2);color:var(--text);font-family:var(--font);font-size:10px;cursor:pointer;border-radius:2px;transition:all .1s}
+.hb:hover{color:var(--amber);border-color:var(--amber)}
+.hb.bskip{color:var(--amber);border-color:#c89040}
+.hb.bdup {color:var(--blue); border-color:#5090d0}
+.hb.brel {color:var(--red);  border-color:#e05060}
+#hchar{font-size:11px;color:var(--text2);min-width:90px}
+
+/* ── Main layout ── */
+#content{flex:1;display:flex;overflow:hidden}
+#left{flex-shrink:0;width:548px;border-right:1px solid var(--line);background:var(--bg2);overflow-y:auto;overflow-x:hidden}
+#wsvg{width:528px;display:block;padding:8px}
+#right{flex:1;display:flex;flex-direction:column;overflow:hidden;min-width:0}
+#cards{flex:1;overflow-y:auto;padding:10px 12px}
+
+/* ── Card sections ── */
+.cs{margin-bottom:14px}
+.cs h3{font-size:9px;letter-spacing:.12em;text-transform:uppercase;color:var(--text);margin-bottom:5px}
+.cwrap{background:var(--bg3);border:1px solid var(--line);border-radius:3px;padding:6px 8px;overflow-x:auto}
+.fbar{display:flex;height:3px;margin-bottom:4px;overflow:hidden;border-radius:1px}
+.fbn{background:#c0d4e8}.fba{background:#b8dcc8}.fbs{background:#d0ccc4}
+.colnums{display:grid;grid-template-columns:repeat(80,7px);gap:1px;margin-bottom:2px}
+.cn{width:7px;height:7px;text-align:center;line-height:7px;font-size:4.5px;color:#a09080}
+.cn.cur{color:var(--amber)}
+.cgrid{display:grid;grid-template-columns:repeat(80,7px);grid-template-rows:repeat(12,7px);gap:1px;margin-bottom:4px}
+.cc{width:7px;height:7px;border-radius:50%;background:#d0ccc4;transition:background .08s}
+.cc.on{background:#1a1008;box-shadow:0 0 2px rgba(0,0,0,.3)}
+.cc.cur{background:rgba(176,104,8,.18)}
+.cc.cur.on{background:#1a1008}
+.ctxt{font-size:8px;color:var(--text2);padding:3px 0 0;border-top:1px solid var(--line);white-space:pre;letter-spacing:.05em;overflow-x:auto}
+
+/* ── Keyboard ── */
+#kbd{flex-shrink:0;background:var(--bg2);border-top:1px solid var(--line);padding:6px 10px 8px}
+.krow{display:flex;gap:3px;justify-content:center;margin-bottom:3px}
+.k{min-width:26px;height:26px;padding:0 4px;background:var(--bg3);border:1px solid var(--line);border-bottom:2px solid #a09080;color:var(--text2);font-family:var(--font);font-size:10px;cursor:pointer;border-radius:2px;display:flex;align-items:center;justify-content:center;user-select:none;transition:all .06s}
+.k:active,.k.lit{background:#fff8e8;border-color:var(--amber);color:var(--amber);transform:translateY(1px);border-bottom-width:1px}
+.k.fn{min-width:40px;font-size:9px;color:var(--text)}
+.k.kskip{min-width:48px;color:var(--amber);border-color:#c89040}
+.k.kdup {min-width:40px;color:var(--blue); border-color:#5090d0}
+.k.krel {min-width:40px;color:var(--red);  border-color:#e05060}
+.k.ksp  {min-width:100px}
+.khint{font-size:9px;color:var(--line2);text-align:center;margin-top:2px}
+
+/* ── SVG relay styles (used via class on SVG elements) ── */
+</style>
+</head>
+<body>
+<div id="app">
+  <div id="hdr">
+    <h1>IBM 026 KEYPUNCH</h1>
+    <div class="sep"></div>
+    <span id="hcol">COL 01 / 80</span>
+    <span class="pill" id="hmode">NUMERIC</span>
+    <div class="sep"></div>
+    <select id="dsel">
+      <option value="payroll">Payroll</option>
+      <option value="inventory">Inventory</option>
+      <option value="grades">Grades</option>
+      <option value="blank">Blank drum</option>
+    </select>
+    <div class="sep"></div>
+    <button class="hb bskip" id="bskip">SKIP</button>
+    <button class="hb bdup"  id="bdup">DUP</button>
+    <button class="hb brel"  id="brel">REL</button>
+    <div class="sep"></div>
+    <span id="hchar" style="color:var(--text)">last: —</span>
+  </div>
+  <div id="content">
+    <div id="left">
+      <svg id="wsvg" viewBox="0 0 512 468" xmlns="http://www.w3.org/2000/svg"></svg>
+    </div>
+    <div id="right">
+      <div id="cards">
+        <div class="cs">
+          <h3>Card being punched</h3>
+          <div class="cwrap">
+            <div class="fbar" id="fbar-c"></div>
+            <div class="colnums" id="cn-c"></div>
+            <div class="cgrid"   id="cg-c"></div>
+            <div class="ctxt"    id="ct-c"></div>
+          </div>
+        </div>
+        <div class="cs">
+          <h3>Read station (last completed card)</h3>
+          <div class="cwrap">
+            <div class="cgrid" id="cg-r"></div>
+            <div class="ctxt"  id="ct-r"></div>
+          </div>
+        </div>
+      </div>
+      <div id="kbd"></div>
+    </div>
+  </div>
+</div>
+<script>
+// ════════════════════════════════════════════════════════════════
+// SIMULATION
+// ════════════════════════════════════════════════════════════════
+
+const ROWS = ['12','11','0','1','2','3','4','5','6','7','8','9'];
+const NC = 80;
+const NS = 'http://www.w3.org/2000/svg';
+
+// Hollerith encoding
+const HL = {}, HLD = {};
+(function(){
+  const d = {
+    '0':['0'],'1':['1'],'2':['2'],'3':['3'],'4':['4'],
+    '5':['5'],'6':['6'],'7':['7'],'8':['8'],'9':['9'],
+    'A':['12','1'],'B':['12','2'],'C':['12','3'],'D':['12','4'],'E':['12','5'],
+    'F':['12','6'],'G':['12','7'],'H':['12','8'],'I':['12','9'],
+    'J':['11','1'],'K':['11','2'],'L':['11','3'],'M':['11','4'],'N':['11','5'],
+    'O':['11','6'],'P':['11','7'],'Q':['11','8'],'R':['11','9'],
+    'S':['0','2'],'T':['0','3'],'U':['0','4'],'V':['0','5'],
+    'W':['0','6'],'X':['0','7'],'Y':['0','8'],'Z':['0','9'],
+    ' ':[]
+  };
+  for(const [ch,rows] of Object.entries(d)){
+    HL[ch] = new Set(rows);
+    const k = [...rows].sort().join(',');
+    HLD[k] = ch;
+  }
+})();
+function rKey(s){ return [...s].sort().join(','); }
+function decodeRows(rows){ return HLD[rKey(rows)] ?? (rows.size?'?':' '); }
+const NUM_CHARS = new Set('0123456789 ');
+
+// ── Relay primitives ─────────────────────────────────────────
+class Relay {
+  constructor(n=''){ this.name=n; this._on=false; }
+  get NO(){ return this._on; }
+  get NC(){ return !this._on; }
+  drive(v){ this._on=!!v; }
+}
+class LatchRelay extends Relay {
+  set(v){   if(v) this._on=true; }
+  reset(v){ if(v) this._on=false; }
+}
+
+// ── Card ────────────────────────────────────────────────────
+class Card {
+  constructor(){ this._h=Array.from({length:NC},()=>new Set()); }
+  punch(col,rows){ for(const r of rows) this._h[col].add(r); }
+  sense(col){ return new Set(this._h[col]); }
+  decodeCol(col){ return decodeRows(this.sense(col)); }
+  toText(){ return Array.from({length:NC},(_,i)=>this.decodeCol(i)).join(''); }
+}
+
+// ── Sub-systems ──────────────────────────────────────────────
+class DrumSensor {
+  constructor(drum){ this.drum=drum; }
+  sense(col){
+    const p=this.drum.sense(col);
+    return Object.fromEntries(ROWS.map(r=>[r,p.has(r)]));
+  }
+}
+class Keyboard {
+  constructor(){ this.interlock=new Relay('KB_INTERLOCK'); }
+  press(ch,num=false){
+    if(this.interlock.NO) throw new Error('KB locked');
+    ch=ch.toUpperCase();
+    if(!HL[ch]) throw new Error(`No Hollerith for '${ch}'`);
+    if(num && !NUM_CHARS.has(ch)) throw new Error(`'${ch}' not valid in NUMERIC`);
+    return new Set(HL[ch]);
+  }
+  lock(){   this.interlock.drive(true); }
+  unlock(){ this.interlock.drive(false); }
+}
+class ShiftGateNetwork {
+  constructor(){ this.z12=new Relay('Z12'); this.z11=new Relay('Z11'); }
+  setNumeric(){ this.z12.drive(true);  this.z11.drive(true); }
+  setAlpha(){   this.z12.drive(false); this.z11.drive(false); }
+  gate(rows){
+    return new Set([...rows].filter(r=>{
+      if(r==='12'&&this.z12.NO) return false;
+      if(r==='11'&&this.z11.NO) return false;
+      return true;
+    }));
+  }
+}
+class PunchSolenoids { fire(rows){ return new Set(rows); } }
+
+// ── IBM 026 ─────────────────────────────────────────────────
+class IBM026 {
+  constructor(drumCard){
+    this.drum       = new DrumSensor(drumCard);
+    this.keyboard   = new Keyboard();
+    this.gates      = new ShiftGateNetwork();
+    this.solenoids  = new PunchSolenoids();
+    this.field_start   = new Relay('FIELD_START');
+    this.alpha_latch   = new LatchRelay('ALPHA_LATCH');
+    this.numeric_latch = new LatchRelay('NUMERIC_LATCH');
+    this.skip_latch    = new LatchRelay('SKIP_LATCH');
+    this.column    = 0;
+    this.data_card = new Card();
+    this.read_card = null;
+    // sense state (set by _senseAndLatch, used by step result)
+    this.lastSense      = {};
+    this.lastFieldStart = false;
+    this.lastModeSet    = null;
+    // init
+    this.alpha_latch.set(true);
+    this._senseAndLatch();
+    this._configGates();
+  }
+
+  get mode(){
+    if(this.skip_latch.NO)    return 'SKIP';
+    if(this.numeric_latch.NO) return 'NUMERIC';
+    return 'ALPHA';
+  }
+
+  _senseAndLatch(){
+    const s = this.drum.sense(this.column);
+    this.field_start.drive(s['12']);
+    if(this.field_start.NO){
+      this.alpha_latch.reset(true);
+      this.numeric_latch.reset(true);
+      this.skip_latch.reset(true);
+      const isSkip    = s['0'];
+      const isNumeric = s['11'] && !s['0'];
+      const isAlpha   = !s['11'] && !s['0'];
+      this.skip_latch.set(isSkip);
+      this.numeric_latch.set(isNumeric);
+      this.alpha_latch.set(isAlpha);
+      this.lastModeSet = isSkip?'SKIP':isNumeric?'NUMERIC':'ALPHA';
+    } else {
+      this.lastModeSet = null;
+    }
+    this.lastSense      = s;
+    this.lastFieldStart = this.field_start.NO;
+  }
+
+  _configGates(){
+    if(this.numeric_latch.NO) this.gates.setNumeric();
+    else                       this.gates.setAlpha();
+  }
+
+  _advance(){
+    this.column++;
+    if(this.column >= NC){ this._eject(); return true; }
+    return false;
+  }
+
+  _eject(){
+    this.read_card = this.data_card;
+    this.data_card = new Card();
+    this.column = 0;
+    this.alpha_latch.set(true);
+    this._senseAndLatch();
+    this._configGates();
+  }
+
+  step(key=null, dup=false){
+    const col  = this.column;
+    const mode = this.mode;
+    // capture sensing state BEFORE action (set by previous step's advance or init)
+    const res = {
+      col: col+1, mode,
+      action: null,
+      bus: new Set(), gated: new Set(), punched: new Set(),
+      char: ' ', ejected: false,
+      senseRows: this.lastSense,
+      fieldStart: this.lastFieldStart,
+      modeSet: this.lastModeSet,
+    };
+
+    // ── SKIP ──
+    if(this.skip_latch.NO){
+      this.keyboard.lock();
+      res.action = 'skip';
+      const ej = this._advance();
+      if(!ej){ this._senseAndLatch(); this._configGates(); }
+      this.keyboard.unlock();
+      res.ejected = ej;
+      return res;
+    }
+
+    // ── DUP ──
+    if(dup){
+      if(!this.read_card){ res.action='dup_none'; return res; }
+      const bus = this.read_card.sense(col);
+      const p   = this.solenoids.fire(bus);
+      this.data_card.punch(col,p);
+      res.action='dup'; res.bus=bus; res.gated=bus; res.punched=p;
+      res.char=this.data_card.decodeCol(col);
+      const ej=this._advance();
+      if(!ej){this._senseAndLatch();this._configGates();}
+      res.ejected=ej;
+      return res;
+    }
+
+    if(key===null){ res.action='waiting'; return res; }
+
+    // ── Key press ──
+    this.keyboard.unlock();
+    const bus   = this.keyboard.press(key, this.numeric_latch.NO);
+    const gated = this.gates.gate(bus);
+    const punch = this.solenoids.fire(gated);
+    this.data_card.punch(col, punch);
+    res.action='punch'; res.bus=bus; res.gated=gated; res.punched=punch;
+    res.char=this.data_card.decodeCol(col);
+    const ej=this._advance();
+    if(!ej){this._senseAndLatch();this._configGates();}
+    res.ejected=ej;
+    return res;
+  }
+
+  pressSkipKey(){
+    this.skip_latch.set(true);
+    this._configGates();
+    let count=0;
+    while(this.skip_latch.NO && this.column<NC){
+      this.step(); count++;
+    }
+    return this.column+1;
+  }
+}
+
+// ── Drum definitions ─────────────────────────────────────────
+const DRUMS = {
+  payroll:{
+    desc:'Weekly payroll record',
+    fields:[[1,9,'n','Employee no.'],[10,29,'a','Employee name'],
+            [30,35,'n','Pay period'],[36,42,'n','Reg hours'],
+            [43,49,'n','OT hours'],[50,57,'n','Pay rate'],[58,80,'s','(unused)']]
+  },
+  inventory:{
+    desc:'Warehouse inventory record',
+    fields:[[1,8,'n','Part no.'],[9,28,'a','Part desc.'],
+            [29,32,'n','Whs loc'],[33,40,'n','Qty on hand'],
+            [41,48,'n','Unit price'],[49,54,'n','Reorder pt'],[55,80,'s','(unused)']]
+  },
+  grades:{
+    desc:'Student grade record',
+    fields:[[1,9,'n','Student ID'],[10,29,'a','Last name'],
+            [30,44,'a','First name'],[45,49,'a','Course'],
+            [50,52,'n','Grade'],[53,58,'n','Credits'],[59,80,'s','(unused)']]
+  },
+  blank:{ desc:'Blank drum (all alpha)', fields:[] }
+};
+
+function makeDrumCard(fields){
+  const c=new Card();
+  for(const [s,,t] of fields){
+    const col=s-1;
+    if(t==='a') c.punch(col,new Set(['12']));
+    else if(t==='n') c.punch(col,new Set(['12','11']));
+    else if(t==='s') c.punch(col,new Set(['12','0']));
+  }
+  return c;
+}
+
+// ════════════════════════════════════════════════════════════════
+// WIRING DIAGRAM
+// ════════════════════════════════════════════════════════════════
+
+// Component layout (x, y, w, h)
+const D = {
+  drum: [170, 10, 172, 46],
+  fs:   [196, 78, 120, 40],
+  al:   [14,  148, 114, 44],
+  nl:   [199, 148, 114, 44],
+  sl:   [384, 148, 114, 44],
+  z12:  [168, 222,  98, 36],
+  z11:  [278, 222,  98, 36],
+  kbi:  [378, 222, 120, 36],
+  kb:   [10,  280, 100, 34],
+  bus:  [10,  346, 492, 24],
+};
+// solenoid parameters
+const SX0=18, SDX=40, SY=392, SW=36, SH=40;
+const cx = r => r[0]+r[2]/2;
+const cy = r => r[1]+r[3]/2;
+const bot = r => r[1]+r[3];
+const ty = r => r[1];
+
+// Derived key coords
+const FSB = bot(D.fs);       // 118
+const BRCH = 132;            // branch y
+const NBT = bot(D.nl);       // 192
+const GBR = 206;             // gate branch y
+const KBB = bot(D.kb);       // 314
+const CT1 = 328, CT2 = 338; // KBI contact top/bottom
+const BUSY = bot(D.bus);     // 370
+const CTSL = 382, CTSL2 = 390; // solenoid gate contact top/bottom
+
+function solCX(i){ return SX0+i*SDX+SW/2; }  // center x of solenoid i
+
+// Wire path definitions [id, d-string, animatable?]
+const WIRE_DEFS = [
+  // FS chain
+  ['w-drum-fs',    `M${cx(D.drum)},${bot(D.drum)} L${cx(D.drum)},${ty(D.fs)}`],
+  ['w-fs-down',    `M${cx(D.fs)},${FSB} L${cx(D.fs)},${BRCH}`],
+  ['w-branch',     `M${cx(D.al)},${BRCH} L${cx(D.sl)},${BRCH}`, false],
+  ['w-br-al',      `M${cx(D.al)},${BRCH} L${cx(D.al)},${ty(D.al)}`],
+  ['w-br-nl',      `M${cx(D.nl)},${BRCH} L${cx(D.nl)},${ty(D.nl)}`],
+  ['w-br-sl',      `M${cx(D.sl)},${BRCH} L${cx(D.sl)},${ty(D.sl)}`],
+  // Self-hold paths (decorative arcs - not animated)
+  ['w-sh-al',      `M${D.al[0]},${cy(D.al)} Q${D.al[0]-10},${cy(D.al)} ${D.al[0]-10},${ty(D.al)+5} L${D.al[0]-10},${ty(D.al)} L${D.al[0]},${ty(D.al)}`, false],
+  ['w-sh-nl',      `M${D.nl[0]},${cy(D.nl)} Q${D.nl[0]-10},${cy(D.nl)} ${D.nl[0]-10},${ty(D.nl)+5} L${D.nl[0]-10},${ty(D.nl)} L${D.nl[0]},${ty(D.nl)}`, false],
+  ['w-sh-sl',      `M${D.sl[0]},${cy(D.sl)} Q${D.sl[0]-10},${cy(D.sl)} ${D.sl[0]-10},${ty(D.sl)+5} L${D.sl[0]-10},${ty(D.sl)} L${D.sl[0]},${ty(D.sl)}`, false],
+  // Gate wiring
+  ['w-nl-gdown',   `M${cx(D.nl)},${NBT} L${cx(D.nl)},${GBR}`],
+  ['w-gbranch',    `M${cx(D.z12)},${GBR} L${cx(D.z11)},${GBR}`, false],
+  ['w-ng-z12',     `M${cx(D.z12)},${GBR} L${cx(D.z12)},${ty(D.z12)}`],
+  ['w-ng-z11',     `M${cx(D.z11)},${GBR} L${cx(D.z11)},${ty(D.z11)}`],
+  ['w-sl-kbi',     `M${cx(D.sl)},${NBT} L${cx(D.sl)},${GBR} L${cx(D.kbi)},${GBR} L${cx(D.kbi)},${ty(D.kbi)}`],
+  // Keyboard → bus
+  ['w-kb-top',     `M${cx(D.kb)},${KBB} L${cx(D.kb)},${CT1}`],
+  ['w-kb-bot',     `M${cx(D.kb)},${CT2} L${cx(D.kb)},${ty(D.bus)}`],
+  // Bus → solenoids (with gate contacts at i=0,1)
+  ['w-bs0-top',    `M${solCX(0)},${BUSY} L${solCX(0)},${CTSL}`],
+  ['w-bs0-bot',    `M${solCX(0)},${CTSL2} L${solCX(0)},${SY}`],
+  ['w-bs1-top',    `M${solCX(1)},${BUSY} L${solCX(1)},${CTSL}`],
+  ['w-bs1-bot',    `M${solCX(1)},${CTSL2} L${solCX(1)},${SY}`],
+  ...Array.from({length:10},(_,i)=>['w-bs'+(i+2), `M${solCX(i+2)},${BUSY} L${solCX(i+2)},${SY}`]),
+];
+
+// Relay box configs [id, D-key, label, sub-label]
+const RELAY_BOXES = [
+  ['drum', 'drum', 'DRUM CARD', null],
+  ['fs',   'fs',   'FIELD START', 'momentary'],
+  ['al',   'al',   'ALPHA LATCH', '⟲ self-hold'],
+  ['nl',   'nl',   'NUMERIC LATCH', '⟲ self-hold'],
+  ['sl',   'sl',   'SKIP LATCH', '⟲ self-hold'],
+  ['z12',  'z12',  'ZONE-12 GATE', 'NC contact'],
+  ['z11',  'z11',  'ZONE-11 GATE', 'NC contact'],
+  ['kbi',  'kbi',  'KB INTERLOCK', 'NC contact'],
+  ['kb',   'kb',   'KEYBOARD', null],
+  ['bus',  'bus',  'ROW BUS', null],
+];
+
+// Colors per relay state
+const RC = {
+  off:    { fill:'#eceae4', stroke:'#b0a898' },
+  fs:     { fill:'#fff4cc', stroke:'#b06808' },
+  alpha:  { fill:'#ccf0dc', stroke:'#0e7040' },
+  numeric:{ fill:'#cce4f8', stroke:'#0a58b0' },
+  skip:   { fill:'#fde8cc', stroke:'#b06808' },
+  block:  { fill:'#fcd8d8', stroke:'#b81820' },
+  lock:   { fill:'#fcd8d8', stroke:'#b81820' },
+  bus:    { fill:'#d8eaf8', stroke:'#2060a0' },
+  drum:   { fill:'#e4e0d4', stroke:'#7878a0' },
+  kb:     { fill:'#e4e0d4', stroke:'#7878a0' },
+};
+
+function svgEl(tag, attrs, parent){
+  const e = document.createElementNS(NS, tag);
+  for(const [k,v] of Object.entries(attrs)) e.setAttribute(k,v);
+  if(parent) parent.appendChild(e);
+  return e;
+}
+
+let SVG; // global SVG element reference
+
+function buildDiagram(){
+  SVG = document.getElementById('wsvg');
+
+  // ── Defs ──
+  const defs = svgEl('defs',{},SVG);
+  // PCB grid pattern
+  const pat = svgEl('pattern',{id:'pcbgrid',width:'20',height:'20',patternUnits:'userSpaceOnUse'},defs);
+  svgEl('path',{d:'M 20 0 L 0 0 0 20',fill:'none',stroke:'#c8c0b0',opacity:'.35','stroke-width':'.5'},pat);
+  // Glow filter
+  const fil = svgEl('filter',{id:'glow','x':'-30%','y':'-30%','width':'160%','height':'160%'},defs);
+  const blur=svgEl('feGaussianBlur',{stdDeviation:'2.5',result:'blur'},fil);
+  const merge=svgEl('feMerge',{},fil);
+  svgEl('feMergeNode',{in:'blur'},merge);
+  svgEl('feMergeNode',{in:'SourceGraphic'},merge);
+  // Strong glow
+  const fil2 = svgEl('filter',{id:'glow2','x':'-50%','y':'-50%','width':'200%','height':'200%'},defs);
+  svgEl('feGaussianBlur',{stdDeviation:'4',result:'blur'},fil2);
+  const m2=svgEl('feMerge',{},fil2);
+  svgEl('feMergeNode',{in:'blur'},m2);
+  svgEl('feMergeNode',{in:'SourceGraphic'},m2);
+
+  // ── PCB background ──
+  svgEl('rect',{x:0,y:0,width:512,height:468,fill:'#ede9e0'},SVG);
+  svgEl('rect',{x:0,y:0,width:512,height:468,fill:'url(#pcbgrid)'},SVG);
+
+  // ── Wires (behind relay boxes) ──
+  for(const w of WIRE_DEFS){
+    const anim = w[2]!==false;
+    svgEl('path',{id:w[0],d:w[1],fill:'none',stroke:'#8a7a68','stroke-width':anim?'1.5':'1',opacity:anim?'1':'.5'},SVG);
+  }
+
+  // ── Self-hold brackets (subtle) ──
+  // drawn as the 'w-sh-*' paths above with dim color
+
+  // ── Relay boxes ──
+  for(const [id, dk, label, sub] of RELAY_BOXES){
+    const r = D[dk];
+    const g = svgEl('g',{id:'rg-'+id},SVG);
+    const rect = svgEl('rect',{
+      id:'rb-'+id, x:r[0], y:r[1], width:r[2], height:r[3],
+      rx:'3', fill:RC.off.fill, stroke:RC.off.stroke, 'stroke-width':'1'
+    },g);
+    // main label
+    const textY = sub ? r[1]+r[3]/2-4 : r[1]+r[3]/2;
+    svgEl('text',{
+      id:'rl-'+id, x:cx(r), y:textY,
+      'text-anchor':'middle','dominant-baseline':'central',
+      fill:'#2a2010','font-family':'IBM Plex Mono,monospace',
+      'font-size':'9','font-weight':'500'
+    },g).textContent=label;
+    if(sub){
+      svgEl('text',{
+        x:cx(r), y:r[1]+r[3]/2+7,
+        'text-anchor':'middle','dominant-baseline':'central',
+        fill:'#7a6858','font-family':'IBM Plex Mono,monospace','font-size':'7'
+      },g).textContent=sub;
+    }
+  }
+
+  // ── Branch junction dots ──
+  for(const [xv,yv] of [[cx(D.al),BRCH],[cx(D.nl),BRCH],[cx(D.sl),BRCH],
+                         [cx(D.z12),GBR],[cx(D.z11),GBR]]){
+    svgEl('circle',{cx:xv,cy:yv,r:'2.5',fill:'#7a6858'},SVG);
+  }
+
+  // ── Drum brush indicators (12 small circles) ──
+  const bx0 = D.drum[0]+12, bxd=12.5;
+  for(let i=0;i<12;i++){
+    const bx=bx0+i*bxd;
+    svgEl('circle',{id:'br-'+ROWS[i],cx:bx,cy:D.drum[1]+16,r:'4',
+      fill:'#d0ccc4',stroke:'#a09080','stroke-width':'1'},SVG);
+    svgEl('text',{
+      x:bx, y:D.drum[1]+30,
+      'text-anchor':'middle','dominant-baseline':'central',
+      fill:'#7a6858','font-family':'IBM Plex Mono,monospace','font-size':'6'
+    },SVG).textContent=ROWS[i];
+  }
+
+  // ── Gate contact symbols (overlaid on wires) ──
+  // KBI contact (on w-kb-top/bot wire at x=62, y=328-338)
+  buildContact('ct-kbi', cx(D.kb)-10, CT1, 20, CT2-CT1);
+  // Z12 contact (on bus→sol0 wire at x=solCX(0), y=382-390)
+  buildContact('ct-z12', solCX(0)-10, CTSL, 20, CTSL2-CTSL);
+  // Z11 contact (on bus→sol1 wire at x=solCX(1), y=382-390)
+  buildContact('ct-z11', solCX(1)-10, CTSL, 20, CTSL2-CTSL);
+
+  // ── Solenoid bank ──
+  for(let i=0;i<12;i++){
+    const sx=SX0+i*SDX, scx=solCX(i);
+    const g=svgEl('g',{id:'sol-'+ROWS[i]},SVG);
+    svgEl('rect',{x:sx,y:SY,width:SW,height:SH,rx:'2',
+      fill:'#e4e0d8',stroke:'#a09080','stroke-width':'1'},g);
+    svgEl('text',{x:scx,y:SY+SH/2-3,'text-anchor':'middle','dominant-baseline':'central',
+      fill:'#2a2010','font-family':'IBM Plex Mono,monospace','font-size':'8','font-weight':'500'},
+      g).textContent=ROWS[i];
+    svgEl('text',{x:scx,y:SY+SH/2+6,'text-anchor':'middle','dominant-baseline':'central',
+      fill:'#7a6858','font-family':'IBM Plex Mono,monospace','font-size':'7'},
+      g).textContent='SOL';
+  }
+
+  // ── Label annotations ──
+  const LA = [[cx(D.drum),D.drum[1]-3,'DRUM CARD  col-by-col sensing'],
+               [cx(D.fs),FSB+20,'FIELD_START  (momentary, row-12 sense)'],
+               [5,BRCH-4,'branch: reset / set latches'],
+               [10,NBT+18,'NUMERIC → enable zone gate relays'],
+               [cx(D.kb)-52,KBB+10,'operator keys'],
+               [20,BUSY+8,'row bus']];
+  for(const [lx,ly,lt] of LA){
+    svgEl('text',{x:lx,y:ly,'text-anchor':'start',fill:'#8a7868',
+      'font-family':'IBM Plex Mono,monospace','font-size':'7'},SVG).textContent=lt;
+  }
+
+  // ── "→ PUNCH" arrow at bottom ──
+  const py=SY+SH+14;
+  svgEl('text',{x:512/2,y:py,'text-anchor':'middle',fill:'#8a7868',
+    'font-family':'IBM Plex Mono,monospace','font-size':'8'},SVG)
+    .textContent='↓  solenoids drive punch dies  →  holes in data card';
+
+  // initial state
+  updateRelayStates();
+}
+
+function buildContact(id, x, y, w, h){
+  const g = svgEl('g',{id},SVG);
+  svgEl('rect',{x,y,width:w,height:h,rx:'1',
+    fill:'#d8f0e4',stroke:'#3a9060','stroke-width':'1'},g);
+  // gap lines (shown when contact opens)
+  const mid=y+h/2;
+  svgEl('line',{id:id+'-gap',x1:x+3,y1:mid,x2:x+w-3,y2:mid,
+    stroke:'#c01828','stroke-width':'1.5',opacity:'0'},g);
+  svgEl('text',{x:x+w/2,y:y+h/2,'text-anchor':'middle','dominant-baseline':'central',
+    fill:'#2a7050','font-family':'IBM Plex Mono,monospace','font-size':'6'},g)
+    .textContent='NC';
+}
+
+// ── Update relay box visuals ──────────────────────────────────
+function setRelay(id, colorKey){
+  const rb=document.getElementById('rb-'+id);
+  const rl=document.getElementById('rl-'+id);
+  if(!rb) return;
+  const c = RC[colorKey]||RC.off;
+  rb.setAttribute('fill',  c.fill);
+  rb.setAttribute('stroke',c.stroke);
+  if(colorKey&&colorKey!=='off'&&colorKey!=='drum'&&colorKey!=='kb'){
+    rb.setAttribute('filter','url(#glow)');
+    if(rl) rl.setAttribute('fill','#100800');
+  } else {
+    rb.removeAttribute('filter');
+    if(rl) rl.setAttribute('fill','#2a2010');
+  }
+}
+
+function setContact(id, open){
+  const el=document.getElementById(id);
+  if(!el) return;
+  const rect=el.querySelector('rect');
+  const gap =document.getElementById(id+'-gap');
+  if(open){
+    rect.setAttribute('fill','#fcd8d8'); rect.setAttribute('stroke','#c01828');
+    if(gap) gap.setAttribute('opacity','1');
+  } else {
+    rect.setAttribute('fill','#d8f0e4'); rect.setAttribute('stroke','#3a9060');
+    if(gap) gap.setAttribute('opacity','0');
+  }
+}
+
+function setBrush(row, on){
+  const c=document.getElementById('br-'+row);
+  if(!c) return;
+  if(on){
+    c.setAttribute('fill','#e08010');
+    c.setAttribute('stroke','#b06008');
+    c.setAttribute('filter','url(#glow)');
+  } else {
+    c.setAttribute('fill','#d0ccc4');
+    c.setAttribute('stroke','#a09080');
+    c.removeAttribute('filter');
+  }
+}
+
+function setSolenoid(row, on){
+  const g=document.getElementById('sol-'+row);
+  if(!g) return;
+  const rect=g.querySelector('rect');
+  if(on){
+    rect.setAttribute('fill','#a8d8f0');
+    rect.setAttribute('stroke','#0a58b0');
+    rect.setAttribute('filter','url(#glow2)');
+    setTimeout(()=>{
+      rect.setAttribute('fill','#e4e0d8');
+      rect.setAttribute('stroke','#a09080');
+      rect.removeAttribute('filter');
+    },300);
+  }
+}
+
+function updateRelayStates(){
+  if(!M) return;
+  setRelay('drum', 'drum');
+  setRelay('fs',   M.field_start.NO   ? 'fs'      : 'off');
+  setRelay('al',   M.alpha_latch.NO   ? 'alpha'   : 'off');
+  setRelay('nl',   M.numeric_latch.NO ? 'numeric' : 'off');
+  setRelay('sl',   M.skip_latch.NO    ? 'skip'    : 'off');
+  setRelay('z12',  M.gates.z12.NO     ? 'block'   : 'off');
+  setRelay('z11',  M.gates.z11.NO     ? 'block'   : 'off');
+  setRelay('kbi',  M.keyboard.interlock.NO ? 'lock' : 'off');
+  setRelay('kb',   'kb');
+  setRelay('bus',  'bus');
+  setContact('ct-kbi', M.keyboard.interlock.NO);
+  setContact('ct-z12', M.gates.z12.NO);
+  setContact('ct-z11', M.gates.z11.NO);
+  for(const r of ROWS) setBrush(r, M.lastSense[r]||false);
+}
+
+// ── Signal pulse animation ────────────────────────────────────
+function pulse(pathId, color, delay=0, duration=280){
+  const path=document.getElementById(pathId);
+  if(!path) return;
+  const len=path.getTotalLength();
+  if(len<1) return;
+  const dot=svgEl('circle',{r:'3.5',fill:color,opacity:'0'},SVG);
+  // glow on dot
+  dot.setAttribute('filter','url(#glow)');
+  const t0=performance.now()+delay;
+  (function f(now){
+    if(now<t0){requestAnimationFrame(f);return;}
+    const t=Math.min(1,(now-t0)/duration);
+    const p=path.getPointAtLength(t*len);
+    dot.setAttribute('cx',p.x); dot.setAttribute('cy',p.y);
+    dot.setAttribute('opacity', t>0.8 ? String(((1-t)/0.2)*0.9) : '0.9');
+    if(t<1) requestAnimationFrame(f);
+    else if(SVG.contains(dot)) SVG.removeChild(dot);
+  })(performance.now());
+}
+
+// Animate a step result
+function animateStep(res){
+  const A=0,B=1,G='#28c870',BL='#3090f0',AM='#f09820',RD='#e03848',WH='#d0e8f8';
+
+  // Field start sequence
+  if(res.fieldStart){
+    pulse('w-drum-fs', AM, 0);
+    pulse('w-fs-down', AM, 120);
+    // reset: signal to all three latches
+    for(const [w,d] of [['w-br-al',200],['w-br-nl',220],['w-br-sl',240]]){
+      pulse(w, RD, d, 200);
+    }
+    // set signal to the new latch
+    const modeColors={ALPHA:G, NUMERIC:BL, SKIP:AM};
+    const modeWires ={ALPHA:'w-br-al', NUMERIC:'w-br-nl', SKIP:'w-br-sl'};
+    if(res.modeSet){
+      pulse(modeWires[res.modeSet], modeColors[res.modeSet], 400);
+      if(res.modeSet==='NUMERIC'){
+        pulse('w-nl-gdown', BL, 530);
+        pulse('w-ng-z12',   RD, 620);
+        pulse('w-ng-z11',   RD, 640);
+      }
+      if(res.modeSet==='SKIP'){
+        pulse('w-sl-kbi', AM, 530);
+      }
+    }
+    // update after animation settles
+    setTimeout(updateRelayStates, 600);
+  }
+
+  // Key punch sequence
+  if(res.action==='punch'){
+    const baseDelay = res.fieldStart ? 700 : 0;
+    pulse('w-kb-top', BL, baseDelay);
+    pulse('w-kb-bot', BL, baseDelay+80);
+    // For each punched row, animate the bus→solenoid wire
+    let rd=0;
+    for(const row of res.punched){
+      const i=ROWS.indexOf(row);
+      if(i<0) continue;
+      const wid = i<2 ? `w-bs${i}-bot` : `w-bs${i}`;
+      pulse(wid, WH, baseDelay+180+rd*25, 220);
+      setTimeout(()=>setSolenoid(row,true), baseDelay+250+rd*25);
+      rd++;
+    }
+    // Show blocked rows (flash contact red)
+    for(const row of res.bus){
+      if(!res.gated.has(row)){
+        const ctId = row==='12'?'ct-z12': row==='11'?'ct-z11':null;
+        if(ctId){
+          setTimeout(()=>{
+            const r=document.getElementById(ctId)?.querySelector('rect');
+            if(r){ r.setAttribute('fill','#2a0208'); r.setAttribute('stroke','#e04858'); }
+            setTimeout(()=>setContact(ctId, M.gates.z12.NO||M.gates.z11.NO),300);
+          }, baseDelay+180);
+        }
+      }
+    }
+  }
+
+  // DUP sequence
+  if(res.action==='dup'){
+    pulse('w-kb-top', '#a060f0', 0);
+    pulse('w-kb-bot', '#a060f0', 80);
+    let rd=0;
+    for(const row of res.punched){
+      const i=ROWS.indexOf(row);
+      if(i<0) continue;
+      const wid=i<2?`w-bs${i}-bot`:`w-bs${i}`;
+      pulse(wid,WH,180+rd*25,220);
+      setTimeout(()=>setSolenoid(row,true),250+rd*25);
+      rd++;
+    }
+  }
+}
+
+// ════════════════════════════════════════════════════════════════
+// CARD DISPLAY
+// ════════════════════════════════════════════════════════════════
+function buildCardGrid(gridId){
+  const g=document.getElementById(gridId);
+  g.innerHTML='';
+  for(let r=0;r<12;r++) for(let c=0;c<NC;c++){
+    const d=document.createElement('div');
+    d.className='cc'; d.id=`${gridId}-${c}-${r}`;
+    g.appendChild(d);
+  }
+}
+
+function updateCardGrid(gridId, card, curCol=-1){
+  for(let c=0;c<NC;c++){
+    const rows=card.sense(c);
+    for(let ri=0;ri<12;ri++){
+      const r=ROWS[ri];
+      const el=document.getElementById(`${gridId}-${c}-${ri}`);
+      if(!el) continue;
+      let cls='cc';
+      if(rows.has(r)) cls+=' on';
+      if(c===curCol) cls+=' cur';
+      el.className=cls;
+    }
+  }
+}
+
+function buildColNums(cnId){
+  const c=document.getElementById(cnId); c.innerHTML='';
+  for(let i=0;i<NC;i++){
+    const d=document.createElement('div');
+    d.className='cn'; d.id=`cn${i}`;
+    d.textContent=(i+1)%10===0?String((i+1)/10):((i+1)%10===0?'':String((i+1)%10));
+    // Show every 5th column number
+    if((i+1)%5===0) d.textContent=i+1<=9?'0'+(i+1):String(i+1);
+    else d.textContent='';
+    c.appendChild(d);
+  }
+}
+
+function updateColHighlight(col){
+  for(let i=0;i<NC;i++){
+    const el=document.getElementById('cn'+i);
+    if(el) el.className='cn'+(i===col?' cur':'');
+  }
+}
+
+function buildFieldBar(barId, drumFields){
+  const bar=document.getElementById(barId); bar.innerHTML='';
+  if(!drumFields||!drumFields.length){
+    const d=document.createElement('div');
+    d.className='fb-a fba'; d.style.flex='80';
+    bar.appendChild(d); return;
+  }
+  for(const [s,e,t] of drumFields){
+    const d=document.createElement('div');
+    const cls = t==='n'?'fb-n fbn': t==='a'?'fb-a fba':'fb-s fbs';
+    d.className=cls; d.style.flex=String(e-s+1);
+    bar.appendChild(d);
+  }
+}
+
+// ════════════════════════════════════════════════════════════════
+// KEYBOARD UI
+// ════════════════════════════════════════════════════════════════
+function buildKeyboard(){
+  const kbd=document.getElementById('kbd'); kbd.innerHTML='';
+  const rows=[
+    ['1','2','3','4','5','6','7','8','9','0'],
+    ['Q','W','E','R','T','Y','U','I','O','P'],
+    ['A','S','D','F','G','H','J','K','L'],
+    ['Z','X','C','V','B','N','M'],
+    [' ']
+  ];
+  for(const row of rows){
+    const div=document.createElement('div'); div.className='krow';
+    for(const ch of row){
+      const btn=document.createElement('button');
+      btn.className='k'+(ch===' '?' ksp':'');
+      btn.textContent=ch===' '?'SPACE':ch;
+      btn.dataset.ch=ch;
+      btn.addEventListener('click',()=>handleInput(ch));
+      div.appendChild(btn);
+    }
+    kbd.appendChild(div);
+  }
+  // Special keys row
+  const spec=document.createElement('div'); spec.className='krow';
+  const specKeys=[['SKIP','kskip'],['DUP','kdup fn'],['REL','krel fn']];
+  for(const [label,cls] of specKeys){
+    const btn=document.createElement('button');
+    btn.className='k '+cls; btn.textContent=label;
+    btn.addEventListener('click',()=>{
+      if(label==='SKIP') doSkip();
+      else if(label==='DUP') doDup();
+      else if(label==='REL') doRel();
+    });
+    spec.appendChild(btn);
+  }
+  kbd.appendChild(spec);
+  const hint=document.createElement('div');
+  hint.className='khint';
+  hint.textContent='or type on your keyboard  ·  SKIP=F5  DUP=F6  REL=F7';
+  kbd.appendChild(hint);
+}
+
+function flashKey(ch){
+  const btns=document.querySelectorAll('.k[data-ch]');
+  for(const b of btns){
+    if(b.dataset.ch===ch||b.dataset.ch===ch.toLowerCase()){
+      b.classList.add('lit');
+      setTimeout(()=>b.classList.remove('lit'),120);
+    }
+  }
+}
+
+// ════════════════════════════════════════════════════════════════
+// STATUS BAR
+// ════════════════════════════════════════════════════════════════
+function updateStatus(){
+  if(!M) return;
+  const col=M.column+1;
+  document.getElementById('hcol').textContent=`COL ${String(col).padStart(2,'0')} / ${NC}`;
+  const mp=document.getElementById('hmode');
+  mp.textContent=M.mode;
+  mp.className='pill m'+M.mode.toLowerCase().slice(0,1);
+}
+
+// ════════════════════════════════════════════════════════════════
+// INPUT HANDLERS
+// ════════════════════════════════════════════════════════════════
+let M = null; // machine instance
+let busy = false; // prevent re-entrant animation
+
+function handleInput(ch){
+  if(!M) return;
+  if(M.skip_latch.NO) return; // keyboard locked
+  ch=ch.toUpperCase();
+  flashKey(ch);
+  let res;
+  try {
+    res = M.step(ch);
+  } catch(e){
+    document.getElementById('hchar').textContent='err: '+e.message;
+    return;
+  }
+  onStepResult(res, ch);
+}
+
+function doDup(){
+  if(!M) return;
+  if(M.skip_latch.NO) return;
+  const res=M.step(null,true);
+  onStepResult(res,'DUP');
+}
+
+function doSkip(){
+  if(!M) return;
+  const fromCol=M.column+1;
+  const senseSnap=Object.assign({},M.lastSense);
+  const fs=M.lastFieldStart, ms=M.lastModeSet;
+  M.pressSkipKey();
+  // show skip animation: SKIP key → SKIP_LATCH
+  pulse('w-br-sl','#f07820',0,200);
+  pulse('w-sl-kbi','#f07820',160,250);
+  updateRelayStates();
+  refreshCards();
+  updateStatus();
+  document.getElementById('hchar').textContent=`SKIP col ${fromCol}→${M.column+1}`;
+}
+
+function doRel(){
+  if(!M) return;
+  M._eject();
+  refreshCards();
+  updateRelayStates();
+  updateStatus();
+  document.getElementById('hchar').textContent='card released';
+}
+
+function onStepResult(res, inputLabel){
+  // Animate first, then update display
+  animateStep(res);
+  updateRelayStates();
+  updateStatus();
+  refreshCards();
+
+  // Run auto-skip after a key punch that lands at a skip field
+  const autoSkipDelay = (res.fieldStart?700:300);
+  if(M.skip_latch.NO && !res.ejected){
+    setTimeout(()=>{
+      runAutoSkip();
+    }, autoSkipDelay);
+  }
+
+  const ch=res.char||' ';
+  document.getElementById('hchar').textContent=
+    `last: ${inputLabel==='DUP'?'DUP':JSON.stringify(ch)}  →  rows: ${[...res.punched].sort().join(' ')||'∅'}`;
+
+  if(res.ejected){
+    setTimeout(()=>{
+      refreshCards();
+      updateRelayStates();
+      updateStatus();
+    }, 200);
+  }
+}
+
+function runAutoSkip(){
+  if(!M||!M.skip_latch.NO) return;
+  // Skip all columns in skip field automatically
+  const interval=setInterval(()=>{
+    if(!M.skip_latch.NO||M.column>=NC){
+      clearInterval(interval);
+      refreshCards();
+      updateRelayStates();
+      updateStatus();
+      return;
+    }
+    M.step(); // auto-advance skip
+    updateCardGrid('cg-c', M.data_card, M.column);
+    updateColHighlight(M.column);
+    updateStatus();
+  },25);
+}
+
+function refreshCards(){
+  if(!M) return;
+  updateCardGrid('cg-c', M.data_card, M.column);
+  updateColHighlight(M.column);
+  document.getElementById('ct-c').textContent=M.data_card.toText();
+  if(M.read_card){
+    updateCardGrid('cg-r', M.read_card, -1);
+    document.getElementById('ct-r').textContent=M.read_card.toText();
+  } else {
+    document.getElementById('ct-r').textContent='(no card)';
+  }
+}
+
+// ════════════════════════════════════════════════════════════════
+// INIT
+// ════════════════════════════════════════════════════════════════
+function loadDrum(name){
+  const spec=DRUMS[name]||DRUMS.payroll;
+  const dc=makeDrumCard(spec.fields);
+  M=new IBM026(dc);
+  buildFieldBar('fbar-c', spec.fields);
+  updateRelayStates();
+  updateStatus();
+  refreshCards();
+}
+
+function init(){
+  buildDiagram();
+  buildCardGrid('cg-c');
+  buildCardGrid('cg-r');
+  buildColNums('cn-c');
+  buildKeyboard();
+
+  loadDrum('payroll');
+
+  // Physical keyboard events
+  document.addEventListener('keydown', e=>{
+    if(e.key==='F5'){e.preventDefault();doSkip();return;}
+    if(e.key==='F6'){e.preventDefault();doDup();return;}
+    if(e.key==='F7'){e.preventDefault();doRel();return;}
+    if(e.key==='Enter'||e.key==='Tab'){e.preventDefault();return;}
+    if(e.metaKey||e.ctrlKey||e.altKey) return;
+    if(e.key.length===1) handleInput(e.key);
+  });
+
+  // Drum selector
+  document.getElementById('dsel').addEventListener('change',e=>loadDrum(e.target.value));
+
+  // Header buttons
+  document.getElementById('bskip').addEventListener('click',doSkip);
+  document.getElementById('bdup' ).addEventListener('click',doDup);
+  document.getElementById('brel' ).addEventListener('click',doRel);
+}
+
+document.addEventListener('DOMContentLoaded', init);
+</script>
+</body>
+</html>
